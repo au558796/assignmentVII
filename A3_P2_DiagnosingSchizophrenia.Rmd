@@ -24,7 +24,7 @@ exp(m1$coefficients[2]-m1$coefficients[1])#exponentiate (freakin' odds)
 inv.logit(m1$coefficients[2]-m1$coefficients[1])#inverse log (probabilities)
 
 ##Calculate the different performance measures (accuracy, sensitivity, specificity, PPV, NPV, ROC curve) on a logistic regression using the full dataset. Don't forget the random effects!
-m2<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+diagnosis|participant), data = df, family = "binomial")
+m2<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+participant), data = df, family = "binomial")
 summary(m2)
 df$predictions=predict(m2)
 df$dpred[df$predictions>0]="schizophrenia"
@@ -33,8 +33,8 @@ df$dpred<-as.factor(df$dpred)
 confusionMatrix(data = df$dpred, reference = df$diagnosis, positive = "schizophrenia") 
 
 ##Then cross-validate the logistic regression and re-calculate performance on the testing folds. N.B. The cross-validation functions you already have should be tweaked: you need to calculate these new performance measures.
-dfpredict<-data.frame()
 diagnosis = df$dpredictions
+dfpredict<-data.frame()
 dfpredict$diagnosis = diagnosis
 
 fold_function = function(train_df, test_df,model,x){
