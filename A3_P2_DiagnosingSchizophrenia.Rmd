@@ -4,6 +4,9 @@ author: "Dana Jensen"
 date: "October 17, 2017"
 output: html_document
 ---
+---
+                          "INCOMPLETE"
+---
 ### Assignment 3 - Diagnosing schizophrenia from voice
 ```{r setup, include=FALSE}
 #prelude
@@ -13,84 +16,144 @@ setwd(path)
 library(pacman)
 p_load(lmerTest, boot, caret)
 df <- read.csv("final_rqa.csv")
+df$mean<- scale(df$mean, center = TRUE)
+df$mean<- scale(df$mean, center = TRUE)
+df$stdDev<- scale(df$stdDev, center = TRUE)
+df$range<- scale(df$range, center = TRUE)
+df$median<- scale(df$median, center = TRUE)
+df<- na.omit(df)
 ```
 ### Question 1
 ```{r}
-  ##Build a logistic regression to see whether you can diagnose schizophrenia    from pitch range only.
-m1<-glm(diagnosis ~ mean + range, data = df, family = "binomial")
+  ##Build a logistic regression to see whether you can diagnose schizophrenia from pitch range only.
+m1<-glm(diagnosis ~ range, data = df, family = "binomial")
 summary(m1)
 exp(m1$coefficients[2]-m1$coefficients[1])#exponentiate (freakin' odds)
 inv.logit(m1$coefficients[2]-m1$coefficients[1])#inverse log (probabilities)
 
-  ##Calculate the different performance measures (accuracy, sensitivity,         specificity, PPV, NPV, ROC curve) on a logistic regression using the full      dataset. Don't forget the random effects!
-m2<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
+  ##Calculate the different performance measures (accuracy, sensitivity, specificity, PPV, NPV, ROC curve) on a logistic regression using the full dataset. Don't forget the random effects!
+m2<-glmer(diagnosis ~ range + mean + (1|study)+(1|participant), data = df, family = "binomial")
 summary(m2)
 df$predictions=predict(m2)
 df$dpred[df$predictions>0]="schizophrenia"
 df$dpred[df$predictions<0]="control"
-#df$dpred<-as.factor(df$dpred)
 confusionMatrix(data = df$dpred, reference = df$diagnosis, positive = "schizophrenia") 
 
-  ##Then cross-validate the logistic regression and re-calculate performance     on the testing folds. N.B. The cross-validation functions you already have     should be tweaked: you need to calculate these new performance measures.
-diagnosis = df$dpredictions
-dfpredict<-data.frame()
-dfpredict$diagnosis = df$dpredictions
+  ##Then cross-validate the logistic regression and re-calculate performance on the testing folds. N.B. The cross-validation functions you already have should be tweaked: you need to calculate these new performance measures.
 
-#making a function for cross validation
-fold_function = function(train_df, test_df, model, x){
+#~~~~~~ERROR~~~~~~~~
+model1 = "diagnosis ~ range + mean + (1|study)+(1|participant)"
 train_error = NULL
 test_error = NULL
+testIndexes = NULL
+testData = NULL
+trainData = NULL
+folds <- createFolds(df, k = 4, list = TRUE, returnTrain = TRUE)
 n = 1
-folds <- cut(seq(1, nrow(train_df)), breaks=x, labels=FALSE)
-for(i in 1:x){
-    testIndexes <- which(folds==n,arr.ind=TRUE)
-    testData <- train_df[testIndexes, ]
-    trainData <- train_df[-testIndexes, ]
-    model = model
-    train_error[n] = modelr::rmse(model, trainData)
-    testData$prediction <- predict(model, testData, allow.new.levels = TRUE)
-    test_error[n] = modelr::rmse(model, testData)
-    n = n+1
-    result = c("folds"=n, "train error"= train_error, "test error"= test_error)
+
+#Perform 4 fold cross validation
+for(i in folds){
+  testIndexes <- which(i %in% df$participant,arr.ind=TRUE)
+  testData <- df[testIndexes, ]
+  trainData <- df[-testIndexes, ]
+  Model = glmer(model1 ,data = df, family = 'binomial')
+  model = model1
+  train_error = modelr::rmse(Model, trainData)
+  testData$prediction <- predict(Model, testData, allow.new.levels = TRUE)
+  test_error = modelr::rmse(Model, testData)
+  result = data.frame(model, n, train_error, test_error)
+  if (n == 1){
+    result_df = result
+  }else{
+    result_df = rbind(result_df, result)
+  }
+  n = n+1
 }
-    return(result)
-}
-fold_function(df, dfpredict, m2, 4)
 
-  ##N.B. the predict() function generates probabilities (the full scale         between 0 and 1). A probability > .5 indicates a choice of 1, below a choice   of 0.
+  ##N.B. the predict() function generates probabilities (the full scale between 0 and 1). A probability > .5 indicates a choice of 1, below a choice of 0.
 
-  ##N.B. you need to decide whether calculate performance on each single test    fold or save all the prediction for test folds in one dataset, so to           calculate overall performance.
+  ##N.B. you need to decide whether calculate performance on each single test fold or save all the prediction for test folds in one dataset, so to calculate overall performance.
 
-  ##N.B. Now you have two levels of structure: subject and study. Should this    impact your cross-validation?
+  ##N.B. Now you have two levels of structure: subject and study. Should this impact your cross-validation?
 ```
 ### Question 2
 ```{r}
   ##Which single predictor is the best predictor of diagnosis?
+anova()
+#find area under the curve, specificity and sensitivity
+#~~~~~~ERROR~~~~~~~
+exp(m2$coefficients[2]-m2$coefficients[1])
+inv.logit(C[2]-C[1])
+df$predictions=predict(m2)
+df$dpred[df$predictions>0]="schizophrenia"
+df$dpred[df$predictions<0]="control"
+confusionMatrix(data = df$dpred, reference = df$diagnosis, positive = "schizophrenia") 
 
+##looked these up, figure out what to do
+# auc(sensitivity(churn$predictions,churn$labels))
+# auc(specificity(churn$predictions,churn$labels))
+# auc(accuracy(churn$predictions,churn$labels))
+# auc(roc(churn$predictions,churn$labels))
+# plot(sensitivity(churn$predictions,churn$labels))
+# plot(specificity(churn$predictions,churn$labels))
+# plot(accuracy(churn$predictions,churn$labels))
 ```
 ### Question 3
 ```{r}
-  ##Now it's time to go wild! Use all (voice-related) variables and              interactions you can think of. Compare models and select the best performing   model you can find.
-m3<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
-m4<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
-m5<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
-m6<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
-m7<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
-m8<-glmer(diagnosis ~ scale(range) + scale(mean) + (1+trial|participant), data = df, family = "binomial")
+  ##Now it's time to go wild! Use all (voice-related) variables and interactions you can think of. Compare models and select the best performing   model you can find.
+m3<-glmer(diagnosis ~ range + (1+study|participant), data = df, family = "binomial")
+
+m4<-glmer(diagnosis ~ mean + (1+study|participant), data = df, family = "binomial")
+
+m5<-glmer(diagnosis ~ range + mean + (1+study|participant), data = df, family = "binomial")
+
+m6<-glmer(diagnosis ~ range + mean + range*mean + (1+study|participant), data = df, family = "binomial")
+
+m7<-glmer(diagnosis ~ range + mean + (1|participant), data = df, family = "binomial")
+
+anova(m3, m4, m5, m6, m7)
   ##Remember:
   # - Cross-validation or AIC are crucial to build the best model!
   # - After choosing the model, train it on all the data you have
-  # - Save the model: save(modelName, file = "BestModelForever.rda")
-  # - Create a Markdown that can: a) extract the features from new pitch files   (basically your previous markdown), b) load your model (e.g.                   load("BestModelForever.rda")), and c) predict the diagnosis in the new         dataframe.
+
+#~~~~~~~ERROR~~~~~~~~~ 
+model1 = "diagnosis ~ range + mean + range*mean + (1+study|participant)"
+train_error = NULL
+test_error = NULL
+testIndexes = NULL
+testData = NULL
+trainData = NULL
+folds <- createFolds(df, k = 4, list = TRUE, returnTrain = TRUE)
+n = 1
+
+#Perform 4 fold cross validation
+for(i in folds){
+  testIndexes <- which(i %in% df$participant,arr.ind=TRUE)
+  testData <- df[testIndexes, ]
+  trainData <- df[-testIndexes, ]
+  Model = glmer(model1 ,data = df, family = 'binomial')
+  model = model1
+  train_error = modelr::rmse(Model, trainData)
+  testData$prediction <- predict(Model, testData, allow.new.levels = TRUE)
+  test_error = modelr::rmse(Model, testData)
+  result = data.frame(model, n, train_error, test_error)
+  if (n == 1){
+    result_df = result
+  }else{
+    result_df = rbind(result_df, result)
+  }
+  n = n+1
+}
+
+save(m6, file = "BestModelForever.rda")
+
+#WHAT DOES THIS MEAN?
+# - Create a Markdown that can: a) extract the features from new pitch files(basically your previous markdown), b) load your model (e.g.load("BestModelForever.rda")), and c) predict the diagnosis in the new dataframe.
 
 ```
-### Question 4: [REPORT THE RESULTS]
-METHODS SECTION: how did you analyse the data?
-RESULTS SECTION: can you diagnose schizophrenia based on voice? which features are used? Comment on the difference between the different performance measures.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ### Bonus question 5
 ```{r}
-  ##You have some additional bonus data involving speech rate, pauses, etc.      Include them in your analysis. Do they improve classification?
+  ##You have some additional bonus data involving speech rate, pauses, etc. Include them in your analysis. Do they improve classification?
 ```
 ### Bonus question 6
 ```{r}
