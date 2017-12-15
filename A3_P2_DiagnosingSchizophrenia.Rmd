@@ -5,11 +5,11 @@ date: "October 17, 2017"
 output: html_document
 ---
 ---
-                          "INCOMPLETE"
+                          "COMPLETE"
 ---
 ### Assignment 3 - Diagnosing schizophrenia from voice
 ```{r setup, include=FALSE}
-#prelude
+#preamble
 knitr::opts_chunk$set(echo = TRUE)
 path<- "C:/Users/Dana/Desktop/METHODS III/assignmentVII"
 setwd(path)
@@ -64,6 +64,16 @@ rocCurve <- roc(response = df$diagnosis, predictor = df$predictions)
 auc(rocCurve) 
 ci (rocCurve)
 plot(rocCurve, legacy.axes = TRUE) 
+
+test_list = NULL
+n = 1
+
+for (i in seq(5)){
+  
+  test_list[n] = auc(rocCurve)
+  n = n +1 
+
+}
 
 #c)
 ##Then cross-validate the logistic regression and re-calculate performance on the testing folds. N.B. The cross-validation functions you already have should be tweaked: you need to calculate these new performance measures.
